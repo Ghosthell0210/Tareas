@@ -1,0 +1,6 @@
+{
+  "name": "Pulso",
+  "description": "Gestor inteligente de tareas diarias con priorización automática y recordatorios personalizados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

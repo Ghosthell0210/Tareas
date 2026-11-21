@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Pulso</string>
+    <string name="notification_channel_name">Recordatorios Inteligentes</string>
+    <string name="notification_channel_desc">Notificaciones diarias personalizadas y alertas de tareas prioritarias.</string>
+    <string name="sign_in_with_google">Continuar con Google</string>
+    <string name="auth_tagline">Tu ritmo diario, priorizado con inteligencia</string>
+</resources>

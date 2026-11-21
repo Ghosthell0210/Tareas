@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="firestore_database_id" translatable="false">ai-studio-android-taskflow-74b59fb0-cd2e-4547-8e16-b9b30e6ba730</string>
+    <string name="recaptcha_site_key" translatable="false">6LdAtSouAAAAAJg4mjUH1LI90Q9YzIe_1CsTzvw7</string>
+</resources>

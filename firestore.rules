@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserPreferences(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.remindersEnabled is bool &&
+             data.morningHour is int && data.morningHour >= 0 && data.morningHour <= 23 &&
+             data.morningMinute is int && data.morningMinute >= 0 && data.morningMinute <= 59 &&
+             data.eveningEnabled is bool &&
+             data.eveningHour is int && data.eveningHour >= 0 && data.eveningHour <= 23 &&
+             data.eveningMinute is int && data.eveningMinute >= 0 && data.eveningMinute <= 59 &&
+             data.notificationTone in ['MOTIVADOR', 'DIRECTO', 'ZEN', 'COACH'] &&
+             data.dailyGoalCount is int && data.dailyGoalCount >= 1 && data.dailyGoalCount <= 30 &&
+             (!('lastAiSummary' in data) || (data.lastAiSummary is string && data.lastAiSummary.size() <= 500)) &&
+             (!('lastNotificationTitle' in data) || (data.lastNotificationTitle is string && data.lastNotificationTitle.size() <= 120)) &&
+             (!('lastNotificationBody' in data) || (data.lastNotificationBody is string && data.lastNotificationBody.size() <= 300));
+    }
+
+    function isValidDailyTask(data, ownerUid) {
+      return data.userId is string && data.userId == ownerUid && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 600)) &&
+             data.category in ['TRABAJO', 'PERSONAL', 'SALUD', 'ESTUDIO', 'FINANZAS'] &&
+             data.urgency in ['ALTA', 'MEDIA', 'BAJA'] &&
+             data.timeWindow in ['MANANA', 'TARDE', 'NOCHE', 'CUALQUIERA'] &&
+             data.estimatedMinutes is int && data.estimatedMinutes >= 5 && data.estimatedMinutes <= 480 &&
+             data.priorityScore is int && data.priorityScore >= 0 && data.priorityScore <= 100 &&
+             (!('aiReason' in data) || (data.aiReason is string && data.aiReason.size() <= 240)) &&
+             (!('suggestedTimeLabel' in data) || (data.suggestedTimeLabel is string && data.suggestedTimeLabel.size() <= 20)) &&
+             data.dueDateEpochDay is int && data.dueDateEpochDay >= 0 && data.dueDateEpochDay <= 100000 &&
+             data.completed is bool &&
+             data.dailyRecurring is bool &&
+             data.reminderEnabled is bool &&
+             data.reminderHour is int && data.reminderHour >= 0 && data.reminderHour <= 23 &&
+             data.reminderMinute is int && data.reminderMinute >= 0 && data.reminderMinute <= 59;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'remindersEnabled', 'morningHour',
+                         'morningMinute', 'eveningEnabled', 'eveningHour', 'eveningMinute',
+                         'notificationTone', 'dailyGoalCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'remindersEnabled', 'morningHour',
+                         'morningMinute', 'eveningEnabled', 'eveningHour', 'eveningMinute',
+                         'notificationTone', 'dailyGoalCount', 'lastAiSummary',
+                         'lastNotificationTitle', 'lastNotificationBody', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidUserPreferences(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserPreferences(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       (
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'displayName', 'remindersEnabled', 'morningHour', 'morningMinute',
+                           'eveningEnabled', 'eveningHour', 'eveningMinute', 'notificationTone',
+                           'dailyGoalCount', 'updatedAt'
+                         ]) ||
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'lastAiSummary', 'lastNotificationTitle', 'lastNotificationBody', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /tasks/{taskId} {
+        allow get: if isOwner(userId) && isValidId(taskId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(taskId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'category', 'urgency', 'timeWindow',
+                           'estimatedMinutes', 'priorityScore', 'dueDateEpochDay',
+                           'completed', 'dailyRecurring', 'reminderEnabled',
+                           'reminderHour', 'reminderMinute', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'notes', 'category', 'urgency', 'timeWindow',
+                           'estimatedMinutes', 'priorityScore', 'aiReason', 'suggestedTimeLabel',
+                           'dueDateEpochDay', 'completed', 'dailyRecurring', 'reminderEnabled',
+                           'reminderHour', 'reminderMinute', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidDailyTask(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(taskId) &&
+                         isValidDailyTask(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         (
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'completed', 'dueDateEpochDay', 'updatedAt'
+                           ]) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'priorityScore', 'aiReason', 'suggestedTimeLabel', 'updatedAt'
+                           ]) ||
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'title', 'notes', 'category', 'urgency', 'timeWindow',
+                             'estimatedMinutes', 'priorityScore', 'aiReason', 'suggestedTimeLabel',
+                             'dueDateEpochDay', 'completed', 'dailyRecurring', 'reminderEnabled',
+                             'reminderHour', 'reminderMinute', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(taskId);
+      }
+    }
+  }
+}

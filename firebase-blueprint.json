@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "UserPreferences": {
+      "title": "UserPreferences",
+      "description": "User profile settings, daily focus goal, and personalized notification preferences.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the owner." },
+        "displayName": { "type": "string", "description": "User display name." },
+        "remindersEnabled": { "type": "boolean", "description": "Whether daily push reminders are enabled." },
+        "morningHour": { "type": "integer", "description": "Hour (0-23) for the daily morning reminder." },
+        "morningMinute": { "type": "integer", "description": "Minute (0-59) for the daily morning reminder." },
+        "eveningEnabled": { "type": "boolean", "description": "Whether evening review reminder is enabled." },
+        "eveningHour": { "type": "integer", "description": "Hour (0-23) for the evening reminder." },
+        "eveningMinute": { "type": "integer", "description": "Minute (0-59) for the evening reminder." },
+        "notificationTone": {
+          "type": "string",
+          "enum": ["MOTIVADOR", "DIRECTO", "ZEN", "COACH"],
+          "description": "Personalization style for daily notifications."
+        },
+        "dailyGoalCount": { "type": "integer", "description": "Target number of daily tasks to complete." },
+        "lastAiSummary": { "type": "string", "description": "Latest AI-generated daily prioritization insight." },
+        "lastNotificationTitle": { "type": "string", "description": "Latest AI-personalized notification title." },
+        "lastNotificationBody": { "type": "string", "description": "Latest AI-personalized notification body." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation server timestamp (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update server timestamp (FieldValue.serverTimestamp())." }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "remindersEnabled",
+        "morningHour",
+        "morningMinute",
+        "eveningEnabled",
+        "eveningHour",
+        "eveningMinute",
+        "notificationTone",
+        "dailyGoalCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DailyTask": {
+      "title": "DailyTask",
+      "description": "A user daily task with smart priority score, AI scheduling reasoning, and per-task reminder.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the task owner." },
+        "title": { "type": "string", "description": "Task title." },
+        "notes": { "type": "string", "description": "Optional notes or context." },
+        "category": {
+          "type": "string",
+          "enum": ["TRABAJO", "PERSONAL", "SALUD", "ESTUDIO", "FINANZAS"],
+          "description": "Task category."
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["ALTA", "MEDIA", "BAJA"],
+          "description": "Base urgency level."
+        },
+        "timeWindow": {
+          "type": "string",
+          "enum": ["MANANA", "TARDE", "NOCHE", "CUALQUIERA"],
+          "description": "Preferred time block."
+        },
+        "estimatedMinutes": { "type": "integer", "description": "Estimated effort in minutes." },
+        "priorityScore": { "type": "integer", "description": "Smart priority score from 0 to 100." },
+        "aiReason": { "type": "string", "description": "Optional AI rationale for priority placement." },
+        "suggestedTimeLabel": { "type": "string", "description": "Optional suggested focus time label (e.g., 09:30)." },
+        "dueDateEpochDay": { "type": "integer", "description": "Due date as UTC epoch day." },
+        "completed": { "type": "boolean", "description": "Whether the task is completed." },
+        "dailyRecurring": { "type": "boolean", "description": "Whether this task repeats daily." },
+        "reminderEnabled": { "type": "boolean", "description": "Whether this task has an individual reminder." },
+        "reminderHour": { "type": "integer", "description": "Task reminder hour (0-23)." },
+        "reminderMinute": { "type": "integer", "description": "Task reminder minute (0-59)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation server timestamp (FieldValue.serverTimestamp())." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Update server timestamp (FieldValue.serverTimestamp())." }
+      },
+      "required": [
+        "userId",
+        "title",
+        "category",
+        "urgency",
+        "timeWindow",
+        "estimatedMinutes",
+        "priorityScore",
+        "dueDateEpochDay",
+        "completed",
+        "dailyRecurring",
+        "reminderEnabled",
+        "reminderHour",
+        "reminderMinute",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPreferences" },
+      "description": "Per-user preferences and personalized notification settings."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/DailyTask" },
+      "description": "User-scoped subcollection of daily tasks."
+    }
+  }
+}
